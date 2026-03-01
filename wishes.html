@@ -377,6 +377,7 @@
   .modal-photos.count-2 { grid-template-columns: 1fr 1fr; }
   .modal-photos.count-3 { grid-template-columns: 1fr 1fr; }
   .modal-photos.count-3 img:first-child { grid-column: 1 / -1; }
+  .modal-photos.count-many { grid-template-columns: 1fr 1fr; }
   .modal-photos img { width: 100%; height: auto; object-fit: cover; transition: transform 0.2s; cursor: pointer; }
   .modal-photos img:hover { transform: scale(1.02); }
 
@@ -635,6 +636,66 @@
       ],
       videos: [],
       message: ""
+    },
+    {
+      name: "Baby Masi & Family",
+      thumb: "",
+      photos: [
+        "media/Baby Masi 1.jpeg",
+        "media/Baby Masi 2.jpeg",
+        "media/Baby Masi 3.jpeg",
+        "media/Baby Masi 4.jpeg",
+        "media/Baby Masi 5.jpeg",
+        "media/Baby Masi 6.jpeg",
+        "media/Baby Masi 7.jpeg",
+        "media/Baby Masi 8.jpeg",
+        "media/Baby Masi 9.jpeg"
+      ],
+      videos: [],
+      message: "Dear Ashu\nWishing you loads of love and best wishes as you reach the gold mark.\nWe would need a book (or at least some pages of a diary) to recount and reflect upon your amazing journey\u2026\n\nBriefly\u2026\nYou are one whose life has been a kaleidoscope of events, turning points and moments that have truly made you into the most loving, caring, thinking and compassionate human being.\nEven at the lowest ebb in life you\u2019ve stood tall and are victorious in each battle you\u2019ve fought with resilience like a Buddha.\n\nGoing down memory lane here are some snapshots of your half century that we celebrate today\nAs a little boy we remember you as cute Krishna surrounded by doting gopis\u2026\nAt school your teachers\u2019 pet\nOutstanding achiever in school and college\nBrilliant, brainy and funny with zest for travel and more!\nInfosys onwards your career always stood out.\nAnd you\u2019ve always been the family\u2019s adorable Ashu\u2026\nSo happy to spend time with family once back in India.\n\nLove and more love as we all join in the celebrations!\n\nChinky Gaurav Aanya and Bee Masi"
+    },
+    {
+      name: "Bebu & Aditi",
+      thumb: "",
+      photos: ["media/Bebu & Aditi1.jpeg"],
+      videos: [],
+      message: "Happy Birthday cousin Ashish! You are a role model in the manner in which you have so much empathy and compassion for everyone around you! You are one of the kindest persons in our family and bring so much positive energy to any setting, despite some of your own recent struggles. Your strength is inspiring! I enjoy family get togethers with you cos of the life you bring to them and the depth of conversations that can be had with you. You are a connoisseur of life with varied talents! I take inspiration from your writing and story telling abilities, as well.\nMay you continue inspiring, continue being brave and kind, continue being knowledgeable and passionate on varied topics and most importantly continue being you!\nWishing you the best of health and joy for years to come and an awesome next decade!! Cheers!!\nWith Love,\nBebu & Aditi"
+    },
+    {
+      name: "Bubbly",
+      thumb: "",
+      photos: [],
+      videos: ["media/Bubbly.mp4"],
+      message: ""
+    },
+    {
+      name: "Nikki",
+      thumb: "",
+      photos: ["media/Nikki1.jpeg", "media/Nikki2.jpeg"],
+      videos: [],
+      message: ""
+    },
+    {
+      name: "Saroj Masi",
+      thumb: "",
+      photos: [],
+      videos: [],
+      message: "Aashu my favourite bachcha, look after urself, ur health is in ur hands. As u were on natural theme pl pl adapt in a very disciplined manner."
+    },
+    {
+      name: "Shilpa",
+      thumb: "",
+      photos: ["media/Shilpa.gif"],
+      videos: [],
+      audios: ["media/Shilpa.opus"],
+      message: ""
+    },
+    {
+      name: "Sonal",
+      thumb: "",
+      photos: [],
+      videos: ["media/Sonal.mp4"],
+      message: ""
     }
   ];
 
@@ -721,9 +782,28 @@
       modalMedia.appendChild(video);
     });
 
+    if (wish.audios && wish.audios.length > 0) {
+      wish.audios.forEach(function(src) {
+        var audioWrap = document.createElement('div');
+        audioWrap.style.cssText = 'background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:4px;padding:1rem;margin-bottom:0.5rem;text-align:center;';
+        var label = document.createElement('div');
+        label.style.cssText = 'font-family:Caveat,cursive;font-size:1.1rem;color:var(--gold-light);margin-bottom:0.6rem;';
+        label.textContent = '\u266B Voice message';
+        audioWrap.appendChild(label);
+        var audio = document.createElement('audio');
+        audio.src = src;
+        audio.controls = true;
+        audio.preload = 'metadata';
+        audio.style.cssText = 'width:100%;max-width:320px;';
+        audioWrap.appendChild(audio);
+        modalMedia.appendChild(audioWrap);
+      });
+    }
+
     if (wish.photos.length > 0) {
       var photoGrid = document.createElement('div');
-      photoGrid.className = 'modal-photos count-' + Math.min(wish.photos.length, 3);
+      var countClass = wish.photos.length > 3 ? 'many' : wish.photos.length;
+      photoGrid.className = 'modal-photos count-' + countClass;
       wish.photos.forEach(function(src) {
         var img = document.createElement('img');
         img.src = src;
@@ -751,6 +831,11 @@
     for (var i = 0; i < videos.length; i++) {
       videos[i].pause();
       videos[i].currentTime = 0;
+    }
+    var audios = modalMedia.querySelectorAll('audio');
+    for (var j = 0; j < audios.length; j++) {
+      audios[j].pause();
+      audios[j].currentTime = 0;
     }
   }
 
