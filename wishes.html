@@ -551,161 +551,43 @@
   })();
 
   // ============================================================
-  // LIVELY BACKGROUND MUSIC (upbeat pop for photo/text wishes)
+  // BACKGROUND MUSIC (MP3 for photo/text-only wishes)
   // ============================================================
   var ambientMusic = (function() {
-    var audioCtx = null;
-    var masterGain = null;
-    var isPlaying = false;
+    var audio = new Audio('media/bgmusic.mp3');
+    audio.loop = true;
+    audio.volume = 0;
     var fadeInterval = null;
-    var timers = [];
-    var nodes = [];
-
-    // Bright pop chord progression (I-V-vi-IV in D major)
-    var chords = [
-      { bass: 146.83, notes: [293.66, 369.99, 440.00] },  // D
-      { bass: 220.00, notes: [277.18, 329.63, 440.00] },  // A
-      { bass: 185.00, notes: [246.94, 293.66, 369.99] },  // Bm
-      { bass: 196.00, notes: [246.94, 293.66, 392.00] }   // G
-    ];
-
-    // Arpeggio melody pattern (scale degrees, relative)
-    var melodyPattern = [0, 2, 1, 2, 0, 2, 1, -1];
-
-    function createNode(node) { nodes.push(node); return node; }
-
-    function playKick(time) {
-      var osc = createNode(audioCtx.createOscillator());
-      var g = createNode(audioCtx.createGain());
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.08);
-      g.gain.setValueAtTime(0.35, time);
-      g.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(time); osc.stop(time + 0.2);
-    }
-
-    function playHihat(time, accent) {
-      var bufSize = audioCtx.sampleRate * 0.03;
-      var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
-      var data = buf.getChannelData(0);
-      for (var i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-      var src = createNode(audioCtx.createBufferSource());
-      src.buffer = buf;
-      var hp = createNode(audioCtx.createBiquadFilter());
-      hp.type = 'highpass'; hp.frequency.value = 7000;
-      var g = createNode(audioCtx.createGain());
-      g.gain.setValueAtTime(accent ? 0.12 : 0.06, time);
-      g.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
-      src.connect(hp); hp.connect(g); g.connect(masterGain);
-      src.start(time);
-    }
-
-    function playNote(freq, time, dur, vol, type) {
-      var osc = createNode(audioCtx.createOscillator());
-      var g = createNode(audioCtx.createGain());
-      osc.type = type || 'triangle';
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(0, time);
-      g.gain.linearRampToValueAtTime(vol, time + 0.02);
-      g.gain.setValueAtTime(vol, time + dur - 0.05);
-      g.gain.linearRampToValueAtTime(0, time + dur);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(time); osc.stop(time + dur + 0.01);
-    }
-
-    function scheduleBar(barStart, chordIdx) {
-      var c = chords[chordIdx % chords.length];
-      var eighthNote = 0.25; // ~120 BPM
-
-      // Kick on 1 and 3
-      playKick(barStart);
-      playKick(barStart + eighthNote * 4);
-
-      // Hi-hats on every eighth note
-      for (var h = 0; h < 8; h++) {
-        playHihat(barStart + h * eighthNote, h % 2 === 0);
-      }
-
-      // Bass line (bouncy octave pattern)
-      playNote(c.bass, barStart, eighthNote * 1.8, 0.18, 'sine');
-      playNote(c.bass * 2, barStart + eighthNote * 2, eighthNote * 0.8, 0.10, 'sine');
-      playNote(c.bass, barStart + eighthNote * 4, eighthNote * 1.8, 0.18, 'sine');
-      playNote(c.bass * 2, barStart + eighthNote * 6, eighthNote * 0.8, 0.10, 'sine');
-
-      // Chord stabs (bright, on offbeats for pop feel)
-      c.notes.forEach(function(n) {
-        playNote(n, barStart + eighthNote, eighthNote * 0.7, 0.05, 'square');
-        playNote(n, barStart + eighthNote * 3, eighthNote * 0.7, 0.04, 'square');
-        playNote(n, barStart + eighthNote * 5, eighthNote * 0.7, 0.05, 'square');
-        playNote(n, barStart + eighthNote * 7, eighthNote * 0.7, 0.04, 'square');
-      });
-
-      // Arpeggio melody on top
-      var mIdx = (chordIdx * 2) % melodyPattern.length;
-      var n1 = c.notes[Math.abs(melodyPattern[mIdx]) % c.notes.length] * 2;
-      var n2 = c.notes[Math.abs(melodyPattern[mIdx + 1]) % c.notes.length] * 2;
-      playNote(n1, barStart, eighthNote * 2.8, 0.07, 'sine');
-      playNote(n2, barStart + eighthNote * 3, eighthNote * 2.8, 0.06, 'sine');
-      playNote(n1 * 1.0595, barStart + eighthNote * 6, eighthNote * 1.5, 0.05, 'sine');
-    }
+    var isPlaying = false;
 
     function start() {
       if (isPlaying) return;
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      masterGain = createNode(audioCtx.createGain());
-      masterGain.gain.value = 0;
-      masterGain.connect(audioCtx.destination);
-
       isPlaying = true;
-      var barLen = 0.25 * 8; // 2 seconds per bar
-      var chordIdx = 0;
-      var lookAhead = 4; // schedule 4 bars ahead
-
-      function scheduler() {
-        if (!isPlaying) return;
-        var now = audioCtx.currentTime;
-        for (var b = 0; b < lookAhead; b++) {
-          var barTime = now + b * barLen + 0.05;
-          scheduleBar(barTime, chordIdx + b);
-        }
-        chordIdx += lookAhead;
-        var t = setTimeout(function() { scheduler(); }, (barLen * lookAhead - 0.5) * 1000);
-        timers.push(t);
-      }
-      scheduler();
-
-      // Fade in
+      audio.currentTime = 0;
+      audio.play().catch(function() {});
       var vol = 0;
       clearInterval(fadeInterval);
       fadeInterval = setInterval(function() {
-        vol += 0.025;
-        if (vol >= 1) { vol = 1; clearInterval(fadeInterval); }
-        if (masterGain) masterGain.gain.value = vol * 0.5;
+        vol += 0.03;
+        if (vol >= 0.5) { vol = 0.5; clearInterval(fadeInterval); }
+        audio.volume = vol;
       }, 50);
     }
 
     function stop() {
       if (!isPlaying) return;
       isPlaying = false;
-      timers.forEach(function(t) { clearTimeout(t); });
-      timers = [];
-      var vol = masterGain ? masterGain.gain.value : 0;
+      var vol = audio.volume;
       clearInterval(fadeInterval);
       fadeInterval = setInterval(function() {
         vol -= 0.04;
         if (vol <= 0) {
           vol = 0;
           clearInterval(fadeInterval);
-          nodes.forEach(function(n) { try { n.disconnect(); } catch(e) {} });
-          nodes = [];
+          audio.pause();
+          audio.currentTime = 0;
         }
-        if (masterGain) masterGain.gain.value = Math.max(0, vol);
+        audio.volume = Math.max(0, vol);
       }, 50);
     }
 
@@ -757,7 +639,7 @@
     },
     {
       name: "Kunaal & Family",
-      thumb: "",
+      thumb: "media/thumbnails/Kunaal & Family.jpg",
       photos: [],
       videos: [],
       message: "Dear Ashu\n\nSending you loads of love and best wishes on your 50th.. keep up your \u2018never say die attitude\u2019, your love for family and your \u2018experiments with truth\u2019..\n\nCheers to good health and prosperity always...\n\nKunaal, Pallavi, Kiaan"
