@@ -551,6 +551,106 @@
   })();
 
   // ============================================================
+  // AMBIENT BACKGROUND MUSIC (for photo/text-only wishes)
+  // ============================================================
+  var ambientMusic = (function() {
+    var audioCtx = null;
+    var gainNode = null;
+    var oscillators = [];
+    var isPlaying = false;
+    var fadeInterval = null;
+
+    // Warm major 7th chord progressions in concert pitch
+    var chords = [
+      [261.63, 329.63, 392.00, 493.88],  // Cmaj7
+      [349.23, 440.00, 523.25, 659.25],  // Fmaj7
+      [293.66, 369.99, 440.00, 554.37],  // Dmaj7
+      [392.00, 493.88, 587.33, 739.99]   // Gmaj7
+    ];
+
+    function start() {
+      if (isPlaying) return;
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0;
+      gainNode.connect(audioCtx.destination);
+
+      var chordIndex = 0;
+      function playChord() {
+        // Clear old oscillators
+        oscillators.forEach(function(o) { try { o.stop(); } catch(e) {} });
+        oscillators = [];
+
+        var notes = chords[chordIndex % chords.length];
+        notes.forEach(function(freq, i) {
+          // Main tone (soft sine)
+          var osc = audioCtx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = freq / 2; // One octave lower for warmth
+          var oscGain = audioCtx.createGain();
+          oscGain.gain.value = 0.06;
+          osc.connect(oscGain);
+          oscGain.connect(gainNode);
+          osc.start();
+          oscillators.push(osc);
+
+          // Gentle shimmer (triangle, slightly detuned)
+          var osc2 = audioCtx.createOscillator();
+          osc2.type = 'triangle';
+          osc2.frequency.value = freq + (Math.random() * 2 - 1);
+          var osc2Gain = audioCtx.createGain();
+          osc2Gain.gain.value = 0.015;
+          osc2.connect(osc2Gain);
+          osc2Gain.connect(gainNode);
+          osc2.start();
+          oscillators.push(osc2);
+        });
+
+        chordIndex++;
+      }
+
+      playChord();
+      var chordTimer = setInterval(function() {
+        if (!isPlaying) { clearInterval(chordTimer); return; }
+        playChord();
+      }, 4000);
+
+      // Fade in
+      isPlaying = true;
+      var vol = 0;
+      clearInterval(fadeInterval);
+      fadeInterval = setInterval(function() {
+        vol += 0.02;
+        if (vol >= 1) { vol = 1; clearInterval(fadeInterval); }
+        if (gainNode) gainNode.gain.value = vol * 0.35;
+      }, 50);
+    }
+
+    function stop() {
+      if (!isPlaying) return;
+      isPlaying = false;
+      var vol = gainNode ? gainNode.gain.value : 0;
+      clearInterval(fadeInterval);
+      fadeInterval = setInterval(function() {
+        vol -= 0.03;
+        if (vol <= 0) {
+          vol = 0;
+          clearInterval(fadeInterval);
+          oscillators.forEach(function(o) { try { o.stop(); } catch(e) {} });
+          oscillators = [];
+        }
+        if (gainNode) gainNode.gain.value = Math.max(0, vol);
+      }, 50);
+    }
+
+    return { start: start, stop: stop };
+  })();
+
+  // ============================================================
   // WISHES DATA
   // ============================================================
   var wishes = [
@@ -639,7 +739,7 @@
     },
     {
       name: "Baby Masi & Family",
-      thumb: "",
+      thumb: "media/thumbnails/Baby Masi.jpg",
       photos: [
         "media/Baby Masi 1.jpeg",
         "media/Baby Masi 2.jpeg",
@@ -656,28 +756,28 @@
     },
     {
       name: "Bebu & Aditi",
-      thumb: "",
+      thumb: "media/thumbnails/Bebu & Aditi.jpg",
       photos: ["media/Bebu & Aditi1.jpeg"],
       videos: [],
       message: "Happy Birthday cousin Ashish! You are a role model in the manner in which you have so much empathy and compassion for everyone around you! You are one of the kindest persons in our family and bring so much positive energy to any setting, despite some of your own recent struggles. Your strength is inspiring! I enjoy family get togethers with you cos of the life you bring to them and the depth of conversations that can be had with you. You are a connoisseur of life with varied talents! I take inspiration from your writing and story telling abilities, as well.\nMay you continue inspiring, continue being brave and kind, continue being knowledgeable and passionate on varied topics and most importantly continue being you!\nWishing you the best of health and joy for years to come and an awesome next decade!! Cheers!!\nWith Love,\nBebu & Aditi"
     },
     {
       name: "Bubbly",
-      thumb: "",
+      thumb: "media/thumbnails/Bubbly.jpg",
       photos: [],
       videos: ["media/Bubbly.mp4"],
       message: ""
     },
     {
       name: "Nikki",
-      thumb: "",
+      thumb: "media/thumbnails/Nikki.jpg",
       photos: ["media/Nikki1.jpeg", "media/Nikki2.jpeg"],
       videos: [],
       message: ""
     },
     {
       name: "Saroj Masi",
-      thumb: "",
+      thumb: "media/thumbnails/Saroj Masi.jpeg",
       photos: [],
       videos: [],
       message: "Aashu my favourite bachcha, look after urself, ur health is in ur hands. As u were on natural theme pl pl adapt in a very disciplined manner."
@@ -688,6 +788,13 @@
       photos: ["media/Shilpa.gif"],
       videos: [],
       audios: ["media/Shilpa.opus"],
+      message: ""
+    },
+    {
+      name: "Bela",
+      thumb: "media/thumbnails/Bela.jpg",
+      photos: [],
+      videos: ["media/Bela.mp4"],
       message: ""
     },
     {
@@ -819,6 +926,12 @@
       modalMessage.textContent = wish.message;
     }
 
+    // Play ambient music for wishes without video/audio
+    var hasOwnSound = wish.videos.length > 0 || (wish.audios && wish.audios.length > 0);
+    if (!hasOwnSound) {
+      ambientMusic.start();
+    }
+
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
     modalClose.focus();
@@ -837,6 +950,7 @@
       audios[j].pause();
       audios[j].currentTime = 0;
     }
+    ambientMusic.stop();
   }
 
   modalClose.addEventListener('click', closeModal);
