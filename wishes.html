@@ -423,26 +423,7 @@
     pointer-events: none;
     z-index: 10;
     font-size: 1rem;
-    opacity: 0;
-    animation: heartDrift 2s ease-in forwards;
-  }
-  @keyframes heartDrift {
-    0% {
-      opacity: 0;
-      transform: translateY(0) scale(0.5) rotate(0deg);
-    }
-    15% {
-      opacity: 0.55;
-      transform: translateY(-10px) scale(1) rotate(-8deg);
-    }
-    50% {
-      opacity: 0.4;
-      transform: translateY(-40px) scale(1.05) rotate(6deg);
-    }
-    100% {
-      opacity: 0;
-      transform: translateY(-90px) scale(0.8) rotate(-12deg);
-    }
+    will-change: transform, opacity;
   }
 </style>
 </head>
@@ -912,30 +893,87 @@
     sprinkleHearts();
   }
 
-  // Sprinkle floating hearts inside the modal
-  function sprinkleHearts() {
+  // Continuous smooth floating hearts
+  var heartsInterval = null;
+  var heartsRAF = null;
+  var activeHearts = [];
+
+  function spawnHeart() {
     var modal = document.getElementById('modal');
-    var count = 12;
-    for (var i = 0; i < count; i++) {
-      (function(idx) {
-        setTimeout(function() {
-          var span = document.createElement('span');
-          span.className = 'heart-float';
-          span.textContent = '\u2764';
-          span.style.color = '#e84057';
-          span.style.left = (8 + Math.random() * 84) + '%';
-          span.style.top = (15 + Math.random() * 70) + '%';
-          span.style.fontSize = (0.8 + Math.random() * 0.9) + 'rem';
-          span.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
-          span.style.animationDelay = '0s';
-          modal.appendChild(span);
-          // Remove after animation
-          setTimeout(function() {
-            if (span.parentNode) span.parentNode.removeChild(span);
-          }, 3500);
-        }, idx * 250 + Math.random() * 200);
-      })(i);
+    var span = document.createElement('span');
+    span.className = 'heart-float';
+    span.textContent = '\u2764';
+    span.style.color = '#e84057';
+    var x = 8 + Math.random() * 84;
+    var y = 85 + Math.random() * 10;
+    var size = 0.7 + Math.random() * 0.8;
+    span.style.left = x + '%';
+    span.style.fontSize = size + 'rem';
+    // Slight horizontal sway
+    var swaySpeed = 0.3 + Math.random() * 0.5;
+    var swayAmount = 8 + Math.random() * 15;
+    var speed = 0.4 + Math.random() * 0.4;
+    var heart = {
+      el: span,
+      y: y,
+      x: x,
+      startX: x,
+      opacity: 0,
+      phase: 0, // 0=fade in, 1=visible, 2=fade out
+      swaySpeed: swaySpeed,
+      swayAmount: swayAmount,
+      swayOffset: Math.random() * Math.PI * 2,
+      speed: speed,
+      time: 0
+    };
+    modal.appendChild(span);
+    activeHearts.push(heart);
+  }
+
+  function animateHearts(timestamp) {
+    for (var i = activeHearts.length - 1; i >= 0; i--) {
+      var h = activeHearts[i];
+      h.time += 16;
+      h.y -= h.speed;
+      // Smooth sine sway
+      var sway = Math.sin(h.time * 0.002 * h.swaySpeed + h.swayOffset) * h.swayAmount;
+      h.el.style.top = h.y + '%';
+      h.el.style.left = (h.startX + sway * 0.3) + '%';
+      // Fade in over first 15%, full in middle, fade out last 25%
+      var progress = (85 - h.y) / 80; // 0 at bottom, 1 at top
+      if (progress < 0.15) {
+        h.el.style.opacity = (progress / 0.15) * 0.5;
+      } else if (progress > 0.75) {
+        h.el.style.opacity = ((1 - progress) / 0.25) * 0.5;
+      } else {
+        h.el.style.opacity = 0.5;
+      }
+      // Remove when off top
+      if (h.y < 0) {
+        if (h.el.parentNode) h.el.parentNode.removeChild(h.el);
+        activeHearts.splice(i, 1);
+      }
     }
+    heartsRAF = requestAnimationFrame(animateHearts);
+  }
+
+  function sprinkleHearts() {
+    stopHearts();
+    // Spawn a new heart every ~500ms
+    spawnHeart();
+    heartsInterval = setInterval(spawnHeart, 500);
+    heartsRAF = requestAnimationFrame(animateHearts);
+  }
+
+  function stopHearts() {
+    clearInterval(heartsInterval);
+    heartsInterval = null;
+    if (heartsRAF) { cancelAnimationFrame(heartsRAF); heartsRAF = null; }
+    var modal = document.getElementById('modal');
+    for (var i = 0; i < activeHearts.length; i++) {
+      if (activeHearts[i].el.parentNode) activeHearts[i].el.parentNode.removeChild(activeHearts[i].el);
+    }
+    activeHearts = [];
   }
 
   function closeModal() {
@@ -951,11 +989,7 @@
       audios[j].pause();
       audios[j].currentTime = 0;
     }
-    // Remove any floating hearts
-    var hearts = document.getElementById('modal').querySelectorAll('.heart-float');
-    for (var k = 0; k < hearts.length; k++) {
-      hearts[k].parentNode.removeChild(hearts[k]);
-    }
+    stopHearts();
     ambientMusic.stop();
   }
 
