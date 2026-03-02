@@ -565,7 +565,8 @@
   // BACKGROUND MUSIC (MP3 for photo/text-only wishes)
   // ============================================================
   var ambientMusic = (function() {
-    var audio = new Audio('media/bgmusic.mp3');
+    var tracks = ['media/bgmusic.mp3', 'media/bgmusic2.mp3'];
+    var audio = new Audio();
     audio.loop = true;
     audio.volume = 0;
     var fadeInterval = null;
@@ -574,6 +575,7 @@
     function start() {
       if (isPlaying) return;
       isPlaying = true;
+      audio.src = tracks[Math.floor(Math.random() * tracks.length)];
       audio.currentTime = 0;
       audio.play().catch(function() {});
       var vol = 0;
