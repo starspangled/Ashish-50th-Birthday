@@ -424,7 +424,7 @@
     z-index: 10;
     font-size: 1rem;
     opacity: 0;
-    animation: heartDrift 4s ease-in forwards;
+    animation: heartDrift 2s ease-in forwards;
   }
   @keyframes heartDrift {
     0% {
@@ -432,11 +432,11 @@
       transform: translateY(0) scale(0.5) rotate(0deg);
     }
     15% {
-      opacity: 0.85;
+      opacity: 0.55;
       transform: translateY(-10px) scale(1) rotate(-8deg);
     }
     50% {
-      opacity: 0.7;
+      opacity: 0.4;
       transform: translateY(-40px) scale(1.05) rotate(6deg);
     }
     100% {
@@ -915,27 +915,25 @@
   // Sprinkle floating hearts inside the modal
   function sprinkleHearts() {
     var modal = document.getElementById('modal');
-    var hearts = ['\u2764\uFE0F', '\uD83D\uDC97', '\uD83D\uDC96', '\u2764\uFE0F', '\uD83D\uDC93', '\u2665'];
-    var colors = ['#e84057', '#f06292', '#ff7eb3', '#d4456a', '#ff5c8d', '#c0392b'];
     var count = 12;
     for (var i = 0; i < count; i++) {
       (function(idx) {
         setTimeout(function() {
           var span = document.createElement('span');
           span.className = 'heart-float';
-          span.textContent = hearts[idx % hearts.length];
-          span.style.color = colors[idx % colors.length];
+          span.textContent = '\u2764';
+          span.style.color = '#e84057';
           span.style.left = (8 + Math.random() * 84) + '%';
           span.style.top = (15 + Math.random() * 70) + '%';
           span.style.fontSize = (0.8 + Math.random() * 0.9) + 'rem';
-          span.style.animationDuration = (3 + Math.random() * 3) + 's';
+          span.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
           span.style.animationDelay = '0s';
           modal.appendChild(span);
           // Remove after animation
           setTimeout(function() {
             if (span.parentNode) span.parentNode.removeChild(span);
-          }, 6500);
-        }, idx * 400 + Math.random() * 300);
+          }, 3500);
+        }, idx * 250 + Math.random() * 200);
       })(i);
     }
   }
