@@ -285,12 +285,14 @@
   }
 
   .modal {
+    position: relative;
     background: var(--black-soft);
     border: 1px solid rgba(201, 168, 76, 0.3);
     max-width: 560px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1.5rem;
     border-radius: 4px;
     position: relative;
@@ -414,6 +416,34 @@
   ::-webkit-scrollbar-track { background: var(--black); }
   ::-webkit-scrollbar-thumb { background: rgba(201, 168, 76, 0.3); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* Floating hearts */
+  .heart-float {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    font-size: 1rem;
+    opacity: 0;
+    animation: heartDrift 4s ease-in forwards;
+  }
+  @keyframes heartDrift {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scale(0.5) rotate(0deg);
+    }
+    15% {
+      opacity: 0.85;
+      transform: translateY(-10px) scale(1) rotate(-8deg);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateY(-40px) scale(1.05) rotate(6deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-90px) scale(0.8) rotate(-12deg);
+    }
+  }
 </style>
 </head>
 <body>
@@ -879,6 +909,35 @@
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
     modalClose.focus();
+    sprinkleHearts();
+  }
+
+  // Sprinkle floating hearts inside the modal
+  function sprinkleHearts() {
+    var modal = document.getElementById('modal');
+    var hearts = ['\u2764\uFE0F', '\uD83D\uDC97', '\uD83D\uDC96', '\u2764\uFE0F', '\uD83D\uDC93', '\u2665'];
+    var colors = ['#e84057', '#f06292', '#ff7eb3', '#d4456a', '#ff5c8d', '#c0392b'];
+    var count = 12;
+    for (var i = 0; i < count; i++) {
+      (function(idx) {
+        setTimeout(function() {
+          var span = document.createElement('span');
+          span.className = 'heart-float';
+          span.textContent = hearts[idx % hearts.length];
+          span.style.color = colors[idx % colors.length];
+          span.style.left = (8 + Math.random() * 84) + '%';
+          span.style.top = (15 + Math.random() * 70) + '%';
+          span.style.fontSize = (0.8 + Math.random() * 0.9) + 'rem';
+          span.style.animationDuration = (3 + Math.random() * 3) + 's';
+          span.style.animationDelay = '0s';
+          modal.appendChild(span);
+          // Remove after animation
+          setTimeout(function() {
+            if (span.parentNode) span.parentNode.removeChild(span);
+          }, 6500);
+        }, idx * 400 + Math.random() * 300);
+      })(i);
+    }
   }
 
   function closeModal() {
@@ -893,6 +952,11 @@
     for (var j = 0; j < audios.length; j++) {
       audios[j].pause();
       audios[j].currentTime = 0;
+    }
+    // Remove any floating hearts
+    var hearts = document.getElementById('modal').querySelectorAll('.heart-float');
+    for (var k = 0; k < hearts.length; k++) {
+      hearts[k].parentNode.removeChild(hearts[k]);
     }
     ambientMusic.stop();
   }
