@@ -848,7 +848,7 @@
       name: "Aryan",
       thumb: "media/thumbnails/Aryan.jpg",
       photos: ["media/Aryan1.jpeg", "media/Aryan2.jpeg", "media/Aryan3.jpeg", "media/Aryan4.jpeg"],
-      videos: [],
+      videos: ["media/Aryan.mp4"],
       message: "Dearest Ashu Mama, Wish you a very happy 50th birthday. I wish I was there to celebrate with you!!!"
     }
   ];
@@ -979,20 +979,22 @@
       });
     }
 
-    if (wish.photos.length > 0) {
-      modalMedia.appendChild(buildPhotoGrid(wish.photos, wish.name));
-    }
-
     if (wish.message) {
       modalMessage.style.display = 'block';
       modalMessage.textContent = wish.message;
+      // Move message into modalMedia so it appears above photos
+      modalMedia.appendChild(modalMessage);
+    }
+
+    if (wish.photos.length > 0) {
+      modalMedia.appendChild(buildPhotoGrid(wish.photos, wish.name));
     }
 
     // Photos after message (interspersed layout)
     if (wish.photosAfter && wish.photosAfter.length > 0) {
       var afterGrid = buildPhotoGrid(wish.photosAfter, wish.name);
       afterGrid.style.marginTop = '1rem';
-      modalMessage.parentNode.insertBefore(afterGrid, modalMessage.nextSibling);
+      modalMedia.appendChild(afterGrid);
     }
 
     // Play ambient music for wishes without video/audio
