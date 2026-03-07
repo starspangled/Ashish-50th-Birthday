@@ -368,6 +368,16 @@
     margin: 0.4rem auto 0;
   }
 
+  .modal-subtitle {
+    font-family: 'Caveat', cursive;
+    font-size: 1.2rem;
+    color: var(--gold-light);
+    text-align: center;
+    font-style: italic;
+    margin: 0.2rem 0 1rem;
+    letter-spacing: 0.02em;
+  }
+
   .modal-media { margin-bottom: 1rem; }
 
   .modal-media video,
@@ -769,9 +779,12 @@
     {
       name: "Dolly",
       thumb: "media/thumbnails/Dolly.jpg",
+      subtitle: "Dekho hum tum dono hein ik daali ke phool \u266A \u266B \u266C",
       photos: [
         "media/Dolly1.jpeg", "media/Dolly2.jpeg", "media/Dolly3.jpeg",
-        "media/Dolly4.jpeg", "media/Dolly5.jpeg", "media/Dolly6.jpeg",
+        "media/Dolly4.jpeg", "media/Dolly5.jpeg", "media/Dolly6.jpeg"
+      ],
+      photosAfter: [
         "media/Dolly7.jpeg", "media/Dolly8.jpeg", "media/Dolly9.jpeg",
         "media/Dolly10.jpeg", "media/Dolly11.jpeg", "media/Dolly12.jpeg",
         "media/Dolly13.jpeg", "media/Dolly14.jpeg", "media/Dolly15.jpeg",
@@ -780,7 +793,7 @@
         "media/Dolly22.jpeg"
       ],
       videos: [],
-      message: "Dekho hum tum dono hein ik daali ke phool \u266A \u266B \u266C"
+      message: "Ashu, you are the inspiration, the lion, the compassionate brother whom everyone loves. The one who goes out of his way for those who need support. The one who never fails to stop encouraging. The one with the right \u201CVERDS\u201D to lift people up. The one with the best giggles. The one with the cutest obsessions. The one and only.\n\nToday we celebrate your life, your struggles, your smiles, your victories. Today we celebrate 50 years of YOU.\n\nHere\u2019s to the next 50! I am confident that they are going to be EVEN BETTER, take you higher, and let you get shinier with each passing day."
     },
     {
       name: "Geetu",
@@ -893,11 +906,36 @@
   var modalMessage = document.getElementById('modalMessage');
   var modalClose = document.getElementById('modalClose');
 
+  function buildPhotoGrid(photos, name) {
+    var photoGrid = document.createElement('div');
+    var countClass = photos.length > 3 ? 'many' : photos.length;
+    photoGrid.className = 'modal-photos count-' + countClass;
+    photos.forEach(function(src) {
+      var img = document.createElement('img');
+      img.src = src;
+      img.alt = name;
+      img.loading = 'lazy';
+      photoGrid.appendChild(img);
+    });
+    return photoGrid;
+  }
+
   function openModal(wish) {
     modalName.textContent = wish.name;
     while (modalMedia.firstChild) { modalMedia.removeChild(modalMedia.firstChild); }
     modalMessage.style.display = 'none';
     modalMessage.textContent = '';
+
+    // Subtitle (e.g. song lyric)
+    var oldSub = document.getElementById('modalSubtitle');
+    if (oldSub) oldSub.parentNode.removeChild(oldSub);
+    if (wish.subtitle) {
+      var sub = document.createElement('div');
+      sub.id = 'modalSubtitle';
+      sub.className = 'modal-subtitle';
+      sub.textContent = wish.subtitle;
+      modalName.parentNode.insertBefore(sub, modalMedia);
+    }
 
     wish.videos.forEach(function(src) {
       var video = document.createElement('video');
@@ -928,22 +966,19 @@
     }
 
     if (wish.photos.length > 0) {
-      var photoGrid = document.createElement('div');
-      var countClass = wish.photos.length > 3 ? 'many' : wish.photos.length;
-      photoGrid.className = 'modal-photos count-' + countClass;
-      wish.photos.forEach(function(src) {
-        var img = document.createElement('img');
-        img.src = src;
-        img.alt = wish.name;
-        img.loading = 'lazy';
-        photoGrid.appendChild(img);
-      });
-      modalMedia.appendChild(photoGrid);
+      modalMedia.appendChild(buildPhotoGrid(wish.photos, wish.name));
     }
 
     if (wish.message) {
       modalMessage.style.display = 'block';
       modalMessage.textContent = wish.message;
+    }
+
+    // Photos after message (interspersed layout)
+    if (wish.photosAfter && wish.photosAfter.length > 0) {
+      var afterGrid = buildPhotoGrid(wish.photosAfter, wish.name);
+      afterGrid.style.marginTop = '1rem';
+      modalMessage.parentNode.insertBefore(afterGrid, modalMessage.nextSibling);
     }
 
     // Play ambient music for wishes without video/audio
@@ -1053,6 +1088,13 @@
     for (var j = 0; j < audios.length; j++) {
       audios[j].pause();
       audios[j].currentTime = 0;
+    }
+    // Clean up subtitle and photosAfter
+    var oldSub = document.getElementById('modalSubtitle');
+    if (oldSub) oldSub.parentNode.removeChild(oldSub);
+    var afterGrid = modalMessage.nextElementSibling;
+    if (afterGrid && afterGrid.classList.contains('modal-photos')) {
+      afterGrid.parentNode.removeChild(afterGrid);
     }
     stopHearts();
     ambientMusic.stop();
