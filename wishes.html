@@ -745,6 +745,7 @@
       thumb: "media/thumbnails/Nikki.jpg",
       photos: ["media/Nikki1.jpeg", "media/Nikki2.jpeg"],
       videos: [],
+      singleCol: true,
       message: ""
     },
     {
@@ -920,9 +921,9 @@
   var modalMessage = document.getElementById('modalMessage');
   var modalClose = document.getElementById('modalClose');
 
-  function buildPhotoGrid(photos, name) {
+  function buildPhotoGrid(photos, name, singleCol) {
     var photoGrid = document.createElement('div');
-    var countClass = photos.length > 3 ? 'many' : photos.length;
+    var countClass = singleCol ? '1' : (photos.length > 3 ? 'many' : photos.length);
     photoGrid.className = 'modal-photos count-' + countClass;
     photos.forEach(function(src) {
       var img = document.createElement('img');
@@ -987,7 +988,7 @@
     }
 
     if (wish.photos.length > 0) {
-      modalMedia.appendChild(buildPhotoGrid(wish.photos, wish.name));
+      modalMedia.appendChild(buildPhotoGrid(wish.photos, wish.name, wish.singleCol));
     }
 
     // Photos after message (interspersed layout)
